@@ -1,6 +1,10 @@
+<p align="center">
+  <img src="assets/picograd.svg" alt="picograd banner"/>
+</p>
+
 # picograd
 
-picograd is minimalistic deep learning framework inspired by Micrograd, Tinygrad and PyTorch.
+picograd is minimalistic deep learning framework inspired by micrograd, tinygrad and pytorch.
 
 # Setup
 
