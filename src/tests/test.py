@@ -140,7 +140,26 @@ def module_test() -> bool:
     
 
 def module_nested_test() -> bool:
-    pass
+    class PicoNet(Module):
+        def __init__(self) -> None:
+            self.layer1 = Linear(3, 5)
+            self.layer2 = Linear(5, 3)
+            
+        def forward(self, x: Tensor) -> Tensor:
+            return self.layer2(self.layer1(x).relu())
+            
+        def __call__(self, x: Tensor) -> Tensor:
+            return self.forward(x)
+        
+    net: PicoNet = PicoNet()
+    net_parameters: list[Tensor] = net.parameters()
+
+    if net_parameters[0].data.shape == (3, 5) and net_parameters[1].data.shape == (5, 3):
+        print("MODULE NESTED TEST PASSED")
+        return True
+    else:
+        print("MODULE NESTED TEST FAILED")
+        return False
     
 
 def piconet_test():
@@ -157,6 +176,7 @@ def run_tests() -> bool:
         mat_vec,
         relu,
         module_test,
+        module_nested_test,
         backward_add,
         backward_mat_mul,
         backward_relu
