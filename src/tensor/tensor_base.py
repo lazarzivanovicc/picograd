@@ -1,7 +1,7 @@
 import numpy as np
 
 class Tensor:
-    def __init__(self, data: np.ndarray | list, prev: set = None):
+    def __init__(self, data: np.ndarray | list, prev: set = None) -> None:
         self.data: np.ndarray = data if isinstance(data, np.ndarray) else np.array(data)
         self.grad: np.ndarray = np.zeros_like(data)
         self._backward = lambda: None
@@ -28,6 +28,14 @@ class Tensor:
             # X @ W = Z
             self.grad += out.grad @ other.data.T
             other.grad += self.data.T @ out.grad
+        out._backward = backward
+        return out
+    
+
+    def relu(self) -> Tensor:
+        out: Tensor = Tensor(np.clip(self.data, 0, None), {self})
+        def backward() -> None:
+            self.grad = [grad if val > 0 else 0 for val, grad in zip(self.data, out.grad)]
         out._backward = backward
         return out
 
