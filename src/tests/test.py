@@ -170,6 +170,19 @@ def standard_normal_generation() -> bool:
     else:
         print("STANDARD NORMAL GENERATION TEST FAILED")
         return False
+    
+
+def elementwise_mul() -> bool:
+    a: Tensor = Tensor([1, 1, 1])
+    b: Tensor = Tensor([2, 2, 2])
+    c: Tensor = a * b
+    
+    if np.array_equal([2, 2, 2], c.data):
+        print("ELEMENTWISE MUL TEST PASSED")
+        return True
+    else:
+        print("ELEMENTWISE MUL TEST FAILED")
+        return False       
 
 
 def piconet_test():
@@ -184,6 +197,7 @@ def run_tests() -> bool:
         mat_mul_1D, 
         mat_mul_2D, 
         mat_vec,
+        elementwise_mul,
         relu,
         module_test,
         module_nested_test,

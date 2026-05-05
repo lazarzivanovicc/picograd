@@ -1,22 +1,25 @@
 import numpy as np
 
+# TODO: Finish the transition to function based graph
 class Tensor:
     def __init__(self, data: np.ndarray | list, prev: set = None) -> None:
         self.data: np.ndarray = data if isinstance(data, np.ndarray) else np.array(data)
-        self.grad: np.ndarray = np.zeros_like(data)
+        self.grad: np.ndarray = np.zeros_like(self.data, dtype=np.float32)
+        # These two can be deleted _b and _p
         self._backward = lambda: None
         self._prev: set = set() if prev is None else prev
         # requires_grad boolean - if it is not true pytorch wont allow backward call
         # additionally pytorch does not allow grads for ints, only floats and complex
         # device
         # dtype
+        self.fn: "Function" | None = None
 
     
     def __add__(self, other) -> Tensor:
         out: Tensor = Tensor(self.data + other.data, {self, other})
         def backward() -> None:
-            self.grad += out.grad * 1
-            other.grad += out.grad * 1
+            self.grad += out.grad 
+            other.grad += out.grad 
         out._backward = backward
         return out
 
@@ -31,8 +34,11 @@ class Tensor:
         out._backward = backward
         return out
     
-    def __mul__(self, other) -> Tensor:
-        pass
+
+    def __mul__(self, other: Tensor) -> Tensor:
+        from src.autograd.function import Mul
+        return Mul().apply(self, other)
+        
     
     def __div__(self, other) -> Tensor:
         pass
@@ -56,7 +62,8 @@ class Tensor:
     
     def backward(self) -> None:
         # This is my initialization step
-        self.grad: np.ndarray = np.ones_like(self.data)
+        # TODO: Create graph of fns
+        self.grad: np.ndarray = np.ones_like(self.data, dtype=np.float32)
         visited: set = set()
         topo: list[Tensor] = []
         def build_topo(t: Tensor) -> None:
