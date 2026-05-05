@@ -2,9 +2,9 @@ from typing import Callable
 import numpy as np
 import torch
  
-from src.tensor.tensor_base import Tensor
-from src.nn.module import Module
-from src.nn.layer.linear import Linear
+from picograd.tensor.tensor_base import Tensor
+from picograd.nn.module import Module
+from picograd.nn.layer.linear import Linear
 
 
 def add_test() -> bool:

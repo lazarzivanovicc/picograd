@@ -11,3 +11,7 @@ picograd is minimalistic deep learning framework inspired by micrograd, tinygrad
 Mac
 
 Create .venv and install dependecies from requirements.txt
+
+# Tests
+
+To run tests from root directory python -m picograd.tests.test

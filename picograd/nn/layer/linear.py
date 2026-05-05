@@ -1,5 +1,5 @@
-from src.nn.module import Module
-from src.tensor.tensor_base import Tensor
+from picograd.nn.module import Module
+from picograd.tensor.tensor_base import Tensor
 import numpy as np
 
 # Most basic module used for building DNN

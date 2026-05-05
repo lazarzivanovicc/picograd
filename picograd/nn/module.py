@@ -1,4 +1,4 @@
-from src.tensor.tensor_base import Tensor
+from picograd.tensor.tensor_base import Tensor
 
 
 class Module:
