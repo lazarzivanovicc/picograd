@@ -162,6 +162,16 @@ def module_nested_test() -> bool:
         return False
     
 
+def standard_normal_generation() -> bool:
+    a: Tensor = Tensor.standard_normal((10000, 10))
+    if np.abs(a.data.mean() - 0.0) <= 1e-2 and np.abs(a.data.var() - 1.0) <= 1e-2:
+        print("STANDARD NORMAL GENERATION TEST PASSED")
+        return True
+    else:
+        print("STANDARD NORMAL GENERATION TEST FAILED")
+        return False
+
+
 def piconet_test():
     pass
 
@@ -179,7 +189,8 @@ def run_tests() -> bool:
         module_nested_test,
         backward_add,
         backward_mat_mul,
-        backward_relu
+        backward_relu,
+        standard_normal_generation
     ]
     passed_cnt = 0
     failed_cnt = 0

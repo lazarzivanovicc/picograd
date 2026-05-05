@@ -31,6 +31,20 @@ class Tensor:
         out._backward = backward
         return out
     
+    def __mul__(self, other) -> Tensor:
+        pass
+    
+    def __div__(self, other) -> Tensor:
+        pass
+
+    def __pow__(self, other) -> Tensor:
+        pass
+    
+    def sum(self) -> Tensor:
+        pass
+
+    def mean(self) -> Tensor:
+        pass
 
     def relu(self) -> Tensor:
         out: Tensor = Tensor(np.clip(self.data, 0, None), {self})
@@ -55,6 +69,15 @@ class Tensor:
         for t in reversed(topo):
             t._backward()
 
+
+    @staticmethod
+    def standard_normal(shape: tuple):
+        data: np.ndarray = np.random.standard_normal(shape)
+        return Tensor(data)
+    
+    @staticmethod
+    def uniform(shape: tuple):
+        pass
 
 # Separate Function as an independent class, this clojure approach is not good and this will not scale well
 # Each new function should extends Function and define it's forward and backward and it should save it's parents along with the context needed for backward pass
