@@ -1,6 +1,12 @@
 import numpy as np
 
 class Context:
+    """
+    Context represent the storage of each Function that is used to comupte gradients of input Tensor/s that participated in Function. 
+    Once function performs it's dedicated operation in forward pass it stores Tensors that will be necessary for the backward pass.
+    Context is modified by both forward method of concrete Function implementation and apply method from the base class since Function needs 
+    reference to it's output Tensor from it's forward function in order to compute gradients succesfully.
+    """
     def __init__(self):
         self.saved_tensors: list[Tensor] = []
 
@@ -9,6 +15,18 @@ class Context:
 
 
 class Function:
+    """
+    Function represents the most fundamental block of picograd's autodiff engine.
+    It represent a node in a computational graph.
+
+    Parents field of Function class is used in order to make connections to other nodes (Functions).
+    Context field of Function class is used to store variables necessary for backward pass and gradient computation.
+
+    Apply method of a Function class gets called by a Tensor. It receives Tensor(s) as input(s) and produces new Tensor as a result.
+    This method performs forward pass of a concrete Function class on given Tensor(s) input(s) and stores the references to the input Tensor(s) inside the ctx field. 
+    Additionally once done with the forward pass, reference to output Tensor is also saved in the ctx since Function will need it's gradient during the backward pass. 
+    Lastly, Tensor that was produced by the function gets the reference to this Function, since the backward pass procedure needs to be intialized from Tensor object.
+    """
     def __init__(self):
         self.parents: list[Function] = []
         self.ctx: Context | None = None
@@ -22,8 +40,16 @@ class Function:
         return output
     
 
-# TODO: Finish the transition to function based graph
+# Inputs (X) won't need gradients in X @ W figure out how to skip calculation of grads for them
 class Tensor:
+    """
+    The most basic data container in picograd.
+    
+    Tensor represents an input(s) to a Function(s) which form a computation graph.
+    Stores gradients of computation graph output(s) with respect to data it holds.
+
+    Exposes methods which act as an API, that invoke concrete Function implementations forming computation graph.
+    """
     def __init__(self, data: np.ndarray | list, prev: set = None) -> None:
         self.data: np.ndarray = data if isinstance(data, np.ndarray) else np.array(data)
         self.grad: np.ndarray = np.zeros_like(self.data, dtype=np.float32)
