@@ -102,7 +102,7 @@ class ReLU(Function):
     def backward(self) -> None:
         x, z = self.ctx.saved_tensors
         z_grad_c = z.grad.copy()
-        z_grad_c[x.data < 0] = 0
+        z_grad_c[x.data <= 0] = 0
         x.grad += z_grad_c
         
 
