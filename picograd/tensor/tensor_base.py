@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Context:
     """
     Context represent the storage of each Function that is used to comupte gradients of input Tensor/s that participated in Function. 
@@ -38,7 +39,15 @@ class Function:
         self.ctx.save_for_backward(output) # As this will be used in the backward pass rest of the context is set in self.forward method
         output.fn = self
         return output
-    
+
+
+# Helper I need
+def as_tensor(obj) -> Tensor:
+    if isinstance(obj, Tensor):
+        return obj
+    elif isinstance(obj, list) or isinstance(obj, np.ndarray):
+        return Tensor(obj)
+    return Tensor(np.array([obj]))
 
 # Inputs (X) won't need gradients in X @ W figure out how to skip calculation of grads for them
 class Tensor:
@@ -63,7 +72,7 @@ class Tensor:
     
     def __add__(self, other) -> Tensor:
         from picograd.autograd.ops import Add # Check if registration can help me with breaking the circular deps
-        return Add().apply(self, other)
+        return Add().apply(self, as_tensor(other))
 
 
     def __matmul__(self, other) -> Tensor:
@@ -71,18 +80,22 @@ class Tensor:
         return MatMul().apply(self, other)
     
 
-    def __mul__(self, other: Tensor) -> Tensor:
+    def __mul__(self, other) -> Tensor:
         from picograd.autograd.ops import Mul
-        return Mul().apply(self, other)
+        return Mul().apply(self, as_tensor(other))
     
+    # Feels a bit dirty but ok for now I will add an Op later
     def __sub__(self, other) -> Tensor:
-        pass
+        return self + (other * -1)
+    
     
     def __div__(self, other) -> Tensor:
         pass
 
     def __pow__(self, other) -> Tensor:
-        pass
+        from picograd.autograd.ops import Pow
+        return Pow(other).apply(self)
+        
     
     def sum(self) -> Tensor:
         pass

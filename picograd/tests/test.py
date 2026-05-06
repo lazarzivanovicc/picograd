@@ -20,6 +20,25 @@ def add_test() -> bool:
         return False
     
 
+def sub_test() -> bool:
+    a: Tensor = Tensor([1, 2, 3])
+    b: Tensor = Tensor([1, 1, 1])
+    c: Tensor = a - b
+    c_exp: np.ndarray = np.array([0, 1, 2])
+
+    d: Tensor = Tensor([1, 2, 3])
+    e: int = 3
+    f: Tensor = d - e
+    f_exp: np.ndarray = np.array([-2, -1, 0])
+
+    if np.array_equal(c.data, c_exp) and np.array_equal(f.data, f_exp):
+        print("SUB TEST PASSED")
+        return True
+    else:
+        print("SUB TEST FAILED")
+        return False
+    
+
 def mat_mul_1D() -> bool:
     a: Tensor = Tensor([1, 2, 3])
     b: Tensor = Tensor([1, 2, 1])
@@ -72,6 +91,20 @@ def relu() -> bool:
         print("ReLU TEST FAILED")
         return False
     
+    
+def power() -> bool:
+    a: Tensor = Tensor([-1, 2, 3])
+    b: Tensor = Tensor([[-50, 20, 0], [14, -23, 12]])
+    a_p: Tensor = a ** 2
+    b_p: Tensor = b ** 3
+
+    if np.array_equal(a_p.data, np.pow([-1, 2, 3], 2)) and np.array_equal(b_p.data, np.pow([[-50, 20, 0], [14, -23, 12]], 3)):
+        print("POWER TEST PASSED")
+        return True
+    else:
+        print("POWER TEST FAILED")
+        return False
+    
 
 def backward_relu() -> bool:
     a: Tensor = Tensor([-1, 2, 3])
@@ -107,6 +140,26 @@ def backward_add() -> bool:
     else:
         print("BACKWARD_ADD TEST FAILED")
         return False
+
+# CURRENT IMPLEMENTATION FAILS THE TEST BECAUSE OF THE BRODCASTING -1 gets converted to (1,) and it tries to accumulate grad by using += from (3,) so i would need to collaps
+# MUL AND ADD would also have problems with similar stuff I guess
+def backward_sub() -> bool:
+    a: Tensor = Tensor([1, 2, 3])
+    b: Tensor = Tensor([1, 1, 1])
+    c: Tensor = a - b
+    c.backward()
+
+    a_t: torch.Tensor = torch.tensor([1, 2, 3], dtype=torch.float32, requires_grad=True)
+    b_t: torch.Tensor = torch.tensor([1, 2, 1], dtype=torch.float32, requires_grad=True) 
+    c_t = a_t - b_t
+    c_t.backward(torch.ones_like(c_t))
+
+    if torch.allclose(a_t.grad, torch.tensor(a.grad, dtype=torch.float32)) and torch.allclose(b_t.grad, torch.tensor(b.grad, dtype=torch.float32)):
+        print("BACKWARD_SUB TEST PASSED")
+        return True
+    else:
+        print("BACKWARD_SUB TEST FAILED")
+        return False
                     
 
 def backward_mat_mul() -> bool:
@@ -126,6 +179,24 @@ def backward_mat_mul() -> bool:
     else:
         print("BACKWARD_MAT_MUL TEST FAILED")
         return False
+    
+
+def backward_pow() -> bool:
+    a: Tensor = Tensor([-1, 2, 3])
+    a_p: Tensor = a ** 2
+    a_p.backward()
+
+    a_t: torch.Tensor = torch.tensor([-1, 2, 3], dtype=torch.float32, requires_grad=True)
+    a_t_p: torch.Tensor = a_t.pow(2)
+    a_t_p.backward(torch.ones_like(a_t_p))
+
+    if torch.allclose(a_t.grad, torch.tensor(a.grad, dtype=torch.float32)):
+        print("BACKWARD_POW TEST PASSED")
+        return True
+    else:
+        print("BACKWARD_POW TEST FAILED")
+        return False
+    
     
 
 def module_test() -> bool:
@@ -193,17 +264,21 @@ def test(torch_fn: Callable, picograd_fn: Callable, atol: float) -> bool:
 
 def run_tests() -> bool:
     tests: list = [
-        add_test, 
+        add_test,
+        sub_test, 
         mat_mul_1D, 
         mat_mul_2D, 
         mat_vec,
         elementwise_mul,
         relu,
+        power,
         module_test,
         module_nested_test,
         backward_add,
+        backward_sub,
         backward_mat_mul,
         backward_relu,
+        backward_pow,
         standard_normal_generation
     ]
     passed_cnt = 0

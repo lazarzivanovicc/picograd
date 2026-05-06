@@ -104,6 +104,38 @@ class ReLU(Function):
         z_grad_c = z.grad.copy()
         z_grad_c[x.data <= 0] = 0
         x.grad += z_grad_c
+
+class Pow(Function):
+    def __init__(self, exponent: int|float):
+        self.exponent = exponent
+
+    def forward(self, x: Tensor) -> np.ndarray:
+        tensors: list[Tensor] = [x]
+        out_data: np.ndarray = np.pow(x.data, self.exponent)
+        self.ctx.save_for_backward(*tensors)
+        return out_data
+    
+    def backward(self) -> None:
+        x, z = self.ctx.saved_tensors
+        x.grad += np.pow(self.exponent * x.data, self.exponent - 1) * z.grad
+
+
+class Sum(Function):
+    def __init__(self, axis: int, keep_dims: bool):
+        self.axis = axis
+        self.keep_dims
+
+    def forward(self, x: Tensor) -> np.ndarray:
+        tensors: list[Tensor] = [x]
+        out_data: np.ndarray = np.sum(x.data, self.axis) # This will collapse 1D list do scalar for example by default so I need to recover that in backward or it will keep it if keep_dims true
+        self.ctx.save_for_backward(*tensors)
+        return out_data
+    
+    # def backward(self) -> None:
+    #     x, z = self.ctx.saved_tensors
+    #     x.grad += 
+    
+
         
 
 
