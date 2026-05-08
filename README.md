@@ -4,14 +4,35 @@
 
 # picograd
 
-picograd is minimalistic deep learning framework inspired by micrograd, tinygrad and pytorch.
+A minimal deep learning framework built from scratch. Inspired by [micrograd](https://github.com/karpathy/micrograd), [tinygrad](https://github.com/tinygrad/tinygrad) and [PyTorch](https://github.com/pytorch/pytorch).
 
-# Setup
+Implements a small autograd engine with a PyTorch-like API on top of NumPy.
 
-Mac
+## Quickstart
 
-Create .venv and install dependecies from requirements.txt
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-# Tests
+## Usage
 
-To run tests from root directory python -m picograd.tests.test
+```python
+from picograd.tensor.tensor_base import Tensor
+from picograd.nn.layer.linear import Linear
+
+x = Tensor([[1.0, 2.0], [3.0, 4.0]])
+layer = Linear(2, 1)
+out = layer(x).sum()
+out.backward()
+```
+
+## Tests
+
+```bash
+python -m picograd.tests.test
+```
+
+## License
+
+MIT
