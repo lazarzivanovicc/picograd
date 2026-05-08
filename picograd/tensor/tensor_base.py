@@ -27,6 +27,10 @@ class Function:
     This method performs forward pass of a concrete Function class on given Tensor(s) input(s) and stores the references to the input Tensor(s) inside the ctx field. 
     Additionally once done with the forward pass, reference to output Tensor is also saved in the ctx since Function will need it's gradient during the backward pass. 
     Lastly, Tensor that was produced by the function gets the reference to this Function, since the backward pass procedure needs to be intialized from Tensor object.
+
+    Prior to creation of the output Tensor we check if any of the input tensors requires grad, if yes, we must create output Tensor with requires_grad property marked as True
+    in order for it to accumulate gradients of loss with respect to itself's data which will be used as upstream grads when we call this Functions backward needed
+    for computation of gradient of give input tensors who require their own gradients.
     """
     def __init__(self):
         self.parents: list[Function] = []
@@ -35,7 +39,8 @@ class Function:
     def apply(self, *tensors: Tensor) -> Tensor:
         self.parents = [tensor.fn for tensor in tensors] 
         self.ctx: Context = Context()
-        output: Tensor = Tensor(self.forward(*tensors)) # Foward also modifies the context as it saves the data needed for backward based on fn type
+        requires_grad = any(tensor.requires_grad for tensor in tensors)
+        output: Tensor = Tensor(self.forward(*tensors), requires_grad=requires_grad) # Foward also modifies the context as it saves the data needed for backward based on fn type
         self.ctx.save_for_backward(output) # As this will be used in the backward pass rest of the context is set in self.forward method
         output.fn = self
         return output
@@ -56,15 +61,19 @@ class Tensor:
     
     Tensor represents an input(s) to a Function(s) which form a computation graph.
     Stores gradients of computation graph output(s) with respect to data it holds.
+    requires_grad properity is a flag that marks if the given instance of a Tensor class requires gradients.
 
     Exposes methods which act as an API, that invoke concrete Function implementations forming computation graph.
     """
-    def __init__(self, data: np.ndarray | list, prev: set = None) -> None:
+    def __init__(self, data: np.ndarray | list, requires_grad: bool = False) -> None:
         self.data: np.ndarray = data if isinstance(data, np.ndarray) else np.array(data)
-        self.grad: np.ndarray = np.zeros_like(self.data, dtype=np.float32)
         self.fn: Function | None = None
+        self.requires_grad: bool = requires_grad
+        if self.requires_grad:
+            self.grad: np.ndarray = np.zeros_like(self.data, dtype=np.float32)
+        else:
+            self.grad = None # Nice memory savings if Tensor does not need grads and additionally required_grad allowed me to implement some primitive guards in ops
 
-        # requires_grad boolean - if it is not true pytorch wont allow backward call
         # additionally pytorch does not allow grads for ints, only floats and complex
         # device
         # dtype
@@ -89,19 +98,22 @@ class Tensor:
         return self + (other * -1)
     
     
-    def __div__(self, other) -> Tensor:
-        pass
+    def __truediv__(self, other) -> Tensor:
+        return self * (other ** -1)
 
     def __pow__(self, other) -> Tensor:
         from picograd.autograd.ops import Pow
         return Pow(other).apply(self)
         
-    
+    # Axis and keep_dims passed to this fn
     def sum(self) -> Tensor:
-        pass
+        from picograd.autograd.ops import Sum
+        return Sum().apply(self)
 
     def mean(self) -> Tensor:
-        pass
+        divisor: Tensor = Tensor([1 / self.data.size]) # 1 / n
+        return self.sum() * divisor
+        
 
     def relu(self) -> Tensor:
         from picograd.autograd.ops import ReLU
@@ -109,6 +121,8 @@ class Tensor:
     
 
     def backward(self) -> None:
+        if not self.requires_grad:
+            raise RuntimeError("Tensor used for backward intialization does not require grad.")
         self.grad: np.ndarray = np.ones_like(self.data, dtype=np.float32)
         if self.fn is None:
             return # Case of calling backward on leaf node which has no parents
@@ -128,6 +142,14 @@ class Tensor:
         for f in reversed(topo):
             f.backward()
 
+    def shape(self) -> tuple:
+        return self.data.shape
+    
+
+    def numel(self) -> int:
+        return len(self.data)
+
+    # Static methods of Tensor class that can be used for initialization of new Tensors with certain properties
 
     @staticmethod
     def standard_normal(shape: tuple):
@@ -136,6 +158,22 @@ class Tensor:
     
     @staticmethod
     def uniform(shape: tuple):
+        pass
+
+    @staticmethod
+    def zeros(shape: tuple):
+        pass
+
+    @staticmethod
+    def ones(shape: tuple):
+        pass
+
+    @staticmethod
+    def ones_like(tensor: Tensor):
+        pass
+
+    @staticmethod
+    def zeros_like(tensor: Tensor):
         pass
 
 # Separate Function as an independent class, this clojure approach is not good and this will not scale well

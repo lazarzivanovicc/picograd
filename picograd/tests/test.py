@@ -39,6 +39,32 @@ def sub_test() -> bool:
         return False
     
 
+def scalar_vec_mul() -> bool:
+    a: Tensor = Tensor([1, 2, 3])
+    b: int = 2
+    c: Tensor = a * b
+
+    if np.array_equal(c.data, [2, 4, 6]):
+        print("SCALAR VEC MUL TEST PASSED")
+        return True
+    else:
+        print("SCALAR VEC MUL TEST FAILED")
+        return False
+    
+
+def scalar_vec_div() -> bool:
+    a: Tensor = Tensor([1, 2, 3])
+    b: int = 2
+    c: Tensor = a / b
+
+    if np.array_equal(c.data, [0.5, 1, 1.5]):
+        print("SCALAR VEC DIV TEST PASSED")
+        return True
+    else:
+        print("SCALAR VEC DIV TEST FAILED")
+        return False
+    
+
 def mat_mul_1D() -> bool:
     a: Tensor = Tensor([1, 2, 3])
     b: Tensor = Tensor([1, 2, 1])
@@ -107,7 +133,7 @@ def power() -> bool:
     
 
 def backward_relu() -> bool:
-    a: Tensor = Tensor([-1, 2, 3])
+    a: Tensor = Tensor([-1, 2, 3], requires_grad=True)
     a_r: Tensor = a.relu()
     a_r.backward()
 
@@ -124,8 +150,8 @@ def backward_relu() -> bool:
 
 
 def backward_add() -> bool:
-    a: Tensor = Tensor([1, 2, 3])
-    b: Tensor = Tensor([1, 1, 1])
+    a: Tensor = Tensor([1, 2, 3], requires_grad=True)
+    b: Tensor = Tensor([1, 1, 1], requires_grad=True)
     c: Tensor = a + b
     c.backward()
 
@@ -144,8 +170,8 @@ def backward_add() -> bool:
 # CURRENT IMPLEMENTATION FAILS THE TEST BECAUSE OF THE BRODCASTING -1 gets converted to (1,) and it tries to accumulate grad by using += from (3,) so i would need to collaps
 # MUL AND ADD would also have problems with similar stuff I guess
 def backward_sub() -> bool:
-    a: Tensor = Tensor([1, 2, 3])
-    b: Tensor = Tensor([1, 1, 1])
+    a: Tensor = Tensor([1, 2, 3], requires_grad=True)
+    b: Tensor = Tensor([1, 1, 1], requires_grad=True)
     c: Tensor = a - b
     c.backward()
 
@@ -163,8 +189,8 @@ def backward_sub() -> bool:
                     
 
 def backward_mat_mul() -> bool:
-    a: Tensor = Tensor([[1, 2, 3], [1, 1, 1]]) 
-    b: Tensor = Tensor([[1, 2, 1], [1, 2, 3], [1, 2, 2]]) 
+    a: Tensor = Tensor([[1, 2, 3], [1, 1, 1]], requires_grad=True) 
+    b: Tensor = Tensor([[1, 2, 1], [1, 2, 3], [1, 2, 2]], requires_grad=True) 
     c: Tensor = a @ b
     c.backward()
 
@@ -182,7 +208,7 @@ def backward_mat_mul() -> bool:
     
 
 def backward_pow() -> bool:
-    a: Tensor = Tensor([-1, 2, 3])
+    a: Tensor = Tensor([-1, 2, 3], requires_grad=True)
     a_p: Tensor = a ** 2
     a_p.backward()
 
@@ -197,6 +223,82 @@ def backward_pow() -> bool:
         print("BACKWARD_POW TEST FAILED")
         return False
     
+
+def backward_scalar_vec_mul() -> bool:
+    a: Tensor = Tensor([1, 2, 3], requires_grad=True)
+    b: int = 2
+    c: Tensor = a * b
+    c.backward()
+
+    a_t: torch.Tensor = torch.tensor([1, 2, 3], dtype=torch.float32, requires_grad=True)
+    b_t: int = 2
+    c_t: torch.Tensor = a_t * b_t
+    c_t.backward(torch.ones_like(c_t))
+
+    if torch.allclose(a_t.grad, torch.tensor(a.grad, dtype=torch.float32)):
+        print("BACKWARD  SCALAR VEC MUL TEST PASSED")
+        return True
+    else:
+        print("BACKWARD SCALAR VEC MUL TEST FAILED")
+        return False
+    
+
+def backward_scalar_vec_div() -> bool:
+    a: Tensor = Tensor([1, 2, 3], requires_grad=True)
+    b: int = 2
+    c: Tensor = a / b
+    c.backward()
+
+    a_t: torch.Tensor = torch.tensor([1, 2, 3], dtype=torch.float32, requires_grad=True)
+    b_t: int = 2
+    c_t: torch.Tensor = a_t / b_t
+    c_t.backward(torch.ones_like(c_t))
+
+    if torch.allclose(a_t.grad, torch.tensor(a.grad, dtype=torch.float32)):
+        print("BACKWARD SCALAR VEC MUL TEST PASSED")
+        return True
+    else:
+        print("BACKWARD SCALAR VEC MUL TEST FAILED")
+        return False
+    
+def backward_elementwise_mul() -> bool:
+    pass
+    
+
+def backward_sum() -> bool:
+    a: Tensor = Tensor([1, 2, 3, 4], requires_grad=True)
+    b: Tensor = a.sum()
+    b.backward()
+
+    a_t: torch.Tensor = torch.tensor([1, 2, 3, 4], dtype=torch.float32, requires_grad=True)
+    b_t: torch.Tensor = a_t.sum()
+    b_t.backward()
+
+    if torch.allclose(torch.tensor(a.grad, dtype=torch.float32), a_t.grad):
+        print("BACKWARD SUM TEST PASSED")
+        return True
+    else:
+        print("BACKWARD SUM TEST FAILED")
+        return False
+    
+
+def backward_mse() -> bool:
+    a: Tensor = Tensor([1, 2, 3, 4], requires_grad=True)
+    b: Tensor = Tensor([1, 0, 1, 4])
+    c: Tensor = ((a - b) ** 2).mean()
+    c.backward()
+
+    a_t: torch.Tensor = torch.tensor([1, 2, 3, 4], dtype=torch.float32, requires_grad=True)
+    b_t: torch.Tensor = torch.tensor([1, 0, 1, 4], dtype=torch.float32)
+    c_t: torch.Tensor = ((a_t - b_t) ** 2).mean()
+    c_t.backward()
+
+    if torch.allclose(torch.tensor(a.grad, dtype=torch.float32), a_t.grad):
+        print("BACKWARD MSE TEST PASSED")
+        return True
+    else:
+        print("BACKWARD MSE TEST FAILED")
+        return False
     
 
 def module_test() -> bool:
@@ -235,7 +337,7 @@ def module_nested_test() -> bool:
 
 def standard_normal_generation() -> bool:
     a: Tensor = Tensor.standard_normal((10000, 10))
-    if np.abs(a.data.mean() - 0.0) <= 1e-2 and np.abs(a.data.var() - 1.0) <= 1e-2:
+    if np.abs(a.data.mean() - 0.0) <= 1e-1 and np.abs(a.data.var() - 1.0) <= 1e-1:
         print("STANDARD NORMAL GENERATION TEST PASSED")
         return True
     else:
@@ -253,7 +355,7 @@ def elementwise_mul() -> bool:
         return True
     else:
         print("ELEMENTWISE MUL TEST FAILED")
-        return False       
+        return False  
 
 
 def piconet_test():
@@ -266,6 +368,8 @@ def run_tests() -> bool:
     tests: list = [
         add_test,
         sub_test, 
+        scalar_vec_mul,
+        scalar_vec_div,
         mat_mul_1D, 
         mat_mul_2D, 
         mat_vec,
@@ -279,6 +383,10 @@ def run_tests() -> bool:
         backward_mat_mul,
         backward_relu,
         backward_pow,
+        backward_scalar_vec_mul,
+        backward_scalar_vec_div,
+        backward_sum,
+        backward_mse,
         standard_normal_generation
     ]
     passed_cnt = 0

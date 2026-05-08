@@ -1,6 +1,10 @@
 from picograd.tensor.tensor_base import Tensor, Function
 import numpy as np
 
+# TREBA MI IMPLEMENTACIJA HELPERA KOJI CE DA RAZRESI SLUCAJ KADA DIMEZNIJE UPSTREAM GRADIJENTA NISU ISTE KAO DIMENZIJE ULAZA 
+# U PREVODU KADA SE U FORWARD PASS-U DESI BROADCAST
+# A OBRNUTA STVAR MI TREBA KADA SE DESI REDUKCIJA U FUNKCIJI PO NEKOJ DIMENZIJI, TU TREBA DA EKSPANCUJEM GRADIJENT U TOJ DIMENZIJI
+
 # READ THIS, I PLAN TO CREATE REAL DOCUMENTATION OUT OF THIS
 
 # Forward pass defines set of rules that are used to create new output from input(s)
@@ -56,8 +60,10 @@ class Add(Function):
 
     def backward(self) -> None:
         x, y, z = self.ctx.saved_tensors
-        x.grad += z.grad
-        y.grad += z.grad
+        if x.requires_grad:
+            x.grad += z.grad
+        if y.requires_grad:
+            y.grad += z.grad
 
 
 # Think about receiving grad in backward and how does that influence my walk in backward
@@ -75,8 +81,10 @@ class Mul(Function):
     
     def backward(self) -> None:
         x, y, z = self.ctx.saved_tensors
-        x.grad += z.grad * y.data
-        y.grad += z.grad * x.data
+        if x.requires_grad:
+            x.grad += z.grad * y.data
+        if y.requires_grad:
+            y.grad += z.grad * x.data
 
 
 class MatMul(Function):
@@ -88,8 +96,10 @@ class MatMul(Function):
     
     def backward(self) -> None:
         x, y, z = self.ctx.saved_tensors
-        x.grad += z.grad @ y.data.T
-        y.grad += x.data.T @ z.grad
+        if x.requires_grad:
+            x.grad += z.grad @ y.data.T
+        if y.requires_grad:
+            y.grad += x.data.T @ z.grad
 
 
 class ReLU(Function):
@@ -103,7 +113,9 @@ class ReLU(Function):
         x, z = self.ctx.saved_tensors
         z_grad_c = z.grad.copy()
         z_grad_c[x.data <= 0] = 0
-        x.grad += z_grad_c
+        if x.requires_grad:
+            x.grad += z_grad_c
+
 
 class Pow(Function):
     def __init__(self, exponent: int|float):
@@ -117,23 +129,34 @@ class Pow(Function):
     
     def backward(self) -> None:
         x, z = self.ctx.saved_tensors
-        x.grad += np.pow(self.exponent * x.data, self.exponent - 1) * z.grad
+        if x.requires_grad:
+            x.grad += self.exponent * np.pow(x.data, self.exponent - 1) * z.grad
 
 
+# THIS WILL CAUSE MSE TEST TO FAIL BECAUSE OF THE BROADCASTING PROBLEM 
 class Sum(Function):
-    def __init__(self, axis: int, keep_dims: bool):
+    def __init__(self, axis: int = None, keep_dims: bool = False):
         self.axis = axis
-        self.keep_dims
+        self.keep_dims = keep_dims
 
     def forward(self, x: Tensor) -> np.ndarray:
         tensors: list[Tensor] = [x]
-        out_data: np.ndarray = np.sum(x.data, self.axis) # This will collapse 1D list do scalar for example by default so I need to recover that in backward or it will keep it if keep_dims true
+        out_data: np.ndarray = np.sum(x.data) # This will collapse 1D list do scalar for example by default so I need to recover that in backward or it will keep it if keep_dims true
         self.ctx.save_for_backward(*tensors)
         return out_data
     
-    # def backward(self) -> None:
-    #     x, z = self.ctx.saved_tensors
-    #     x.grad += 
+    def backward(self) -> None:
+        x, z = self.ctx.saved_tensors
+        # Let's work under the assumption that sum collapsed whole input tensor to one number or 0 dim numpy array
+        # This means that dL/dZ will have a shape of Z (for scalar L)
+        # So we need to broadcast the z.grad to original shape of x.data 
+        if x.requires_grad:
+            # In the case 1 we will assume that sum() collapsed to one scalar
+            x.grad += np.full(x.grad.shape, z.grad)
+
+# Implement exp, log, sqrt can be done using pow
+# Additionally reshape's and transposes should be implemented as ops
+# Conv1D, Conv2D I think these could be fun to add now in the very begging
     
 
         
@@ -141,3 +164,5 @@ class Sum(Function):
 
 # def register(fn_name):
 #     setattr(Tensor, fn_name: str, partialmethod())
+
+# Da bih napravio unbroadcast moram da razumem do kraja kako broadcast radi
