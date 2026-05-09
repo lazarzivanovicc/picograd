@@ -111,7 +111,7 @@ class Tensor:
         return Sum().apply(self)
 
     def mean(self) -> Tensor:
-        divisor: Tensor = Tensor([1 / self.data.size]) # 1 / n
+        divisor: Tensor = Tensor(1 / self.data.size) # 1 / n
         return self.sum() * divisor
         
 
