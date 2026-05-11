@@ -39,6 +39,50 @@ python -m picograd.tests.test
 python -m picograd.examples.xor
 ```
 
+```python
+from picograd.nn.module import Module
+from picograd.nn.layer.linear import Linear
+from picograd.nn.optim import SGD
+from picograd.tensor.tensor_base import Tensor
+import numpy as np
+from matplotlib import pyplot as plt
+
+
+class NeuralNet(Module):
+    def __init__(self):
+        super().__init__()
+        self.layer1 = Linear(2, 15)
+        self.layer2 = Linear(15, 1)
+    
+    def forward(self, x: Tensor):
+        x = self.layer1(x)
+        x = x.relu()
+        x = self.layer2(x)
+        return x
+    
+    def __call__(self, x: Tensor):
+        return self.forward(x)
+    
+
+if __name__ == "__main__":
+
+    x: Tensor = Tensor([[0, 0], [0, 1], [1, 0], [1, 1]]) 
+    y: Tensor = Tensor([[0], [1], [1], [0]])
+
+    model = NeuralNet()
+    optimizer = SGD(model.parameters(), lr=0.001)
+
+    running_loss: list[float] = []
+    for epoch in range(2500):
+        optimizer.zero_grad()
+        predictions = model(x)
+        loss = ((predictions - y) ** 2).mean()
+        loss.backward()
+        optimizer.step()
+        running_loss.append(loss.data)
+        print(f"Epoch - {epoch}, loss - {loss.data}")
+```
+
 ## License
 
 MIT
