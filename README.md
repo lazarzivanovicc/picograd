@@ -44,8 +44,6 @@ from picograd.nn.module import Module
 from picograd.nn.layer.linear import Linear
 from picograd.nn.optim import SGD
 from picograd.tensor.tensor_base import Tensor
-import numpy as np
-from matplotlib import pyplot as plt
 
 
 class NeuralNet(Module):
