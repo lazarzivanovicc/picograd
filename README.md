@@ -33,6 +33,12 @@ out.backward()
 python -m picograd.tests.test
 ```
 
+## Examples
+
+```bash
+python -m picograd.examples.xor
+```
+
 ## License
 
 MIT

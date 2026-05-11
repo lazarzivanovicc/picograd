@@ -5,6 +5,7 @@ import numpy as np
 class Optim:
     def __init__(self, params: list[Tensor], lr: float):
         self.params: list[Tensor] = params
+        self.lr = lr
 
     def step(self):
         raise NotImplementedError()
