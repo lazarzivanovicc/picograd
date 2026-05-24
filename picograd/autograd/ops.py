@@ -151,7 +151,7 @@ class Pow(Function):
 # THIS WILL CAUSE MSE TEST TO FAIL BECAUSE OF THE BROADCASTING PROBLEM 
 class Sum(Function):
     def __init__(self, axis: int = None, keep_dims: bool = False):
-        self.axis = axis
+        self.axis = axis # Here we might actually get multiple axis so this will require change
         self.keep_dims = keep_dims
 
     def forward(self, x: Tensor) -> np.ndarray:
