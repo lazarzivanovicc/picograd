@@ -5,7 +5,19 @@ import numpy as np
 # U PREVODU KADA SE U FORWARD PASS-U DESI BROADCAST
 # A OBRNUTA STVAR MI TREBA KADA SE DESI REDUKCIJA U FUNKCIJI PO NEKOJ DIMENZIJI, TU TREBA DA EKSPANCUJEM GRADIJENT U TOJ DIMENZIJI
 # UNBRODCAST SUSTINSKI
-# ALI ZA REDUCTION OPERACIJE MI TREBA SUPORTNO TREBA MI DA GRADIJENT BROADCASTUJEM 
+# ALI ZA REDUCTION OPERACIJE MI TREBA SUPORTNO TREBA MI DA GRADIJENT BROADCASTUJEM
+
+def unbroadcast(grad: np.ndarray, original_shape: tuple):
+    # Summing across leading dimensions
+    while len(grad.shape) > len(original_shape):
+        grad = grad.sum(axis=0, keepdims=False)
+
+    # Summing in the dimensions where explicit brodcasting happened
+    for axis, (gshape, oshape) in enumerate(zip(grad.shape, original_shape)):
+        if oshape == 1 and gshape != 1:
+            grad = grad.sum(axis=axis, keepdims=True)
+
+    return grad
 
 
 # READ THIS, I PLAN TO CREATE REAL DOCUMENTATION OUT OF THIS
@@ -64,9 +76,9 @@ class Add(Function):
     def backward(self) -> None:
         x, y, z = self.ctx.saved_tensors
         if x.requires_grad:
-            x.grad += z.grad
+            x.grad += unbroadcast(z.grad, x.shape())
         if y.requires_grad:
-            y.grad += z.grad
+            y.grad += unbroadcast(z.grad, y.shape())
 
 
 # Think about receiving grad in backward and how does that influence my walk in backward
@@ -85,9 +97,9 @@ class Mul(Function):
     def backward(self) -> None:
         x, y, z = self.ctx.saved_tensors
         if x.requires_grad:
-            x.grad += z.grad * y.data
+            x.grad += unbroadcast(z.grad * y.data, x.shape())
         if y.requires_grad:
-            y.grad += z.grad * x.data
+            y.grad += unbroadcast(z.grad * x.data, y.shape())
 
 
 class MatMul(Function):

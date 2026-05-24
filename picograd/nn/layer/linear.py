@@ -7,12 +7,15 @@ import numpy as np
 # Check the deafult way PyTorch intializes weights - distributin and initialization scheme
 
 class Linear(Module):
-    def __init__(self, in_dim, out_dim):
+    def __init__(self, in_dim: int, out_dim: int, requires_bias: bool = True):
         super().__init__()
         self.W: Tensor = Tensor(np.random.randn(in_dim, out_dim), requires_grad=True) # pytorch saves this as out_dim, in_dim
+        self.requires_bias: bool = requires_bias
+        if self.requires_bias:
+            self.bias = Tensor(np.random.rand(out_dim), requires_grad=True)
 
     def forward(self, x: Tensor):
-        return x @ self.W
+        return x @ self.W + self.bias if self.requires_bias else x @ self.W
     
     def __call__(self, x: Tensor):
         return self.forward(x)
